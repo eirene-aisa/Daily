@@ -1,0 +1,40 @@
+# # https://gist.github.com/architkulkarni/71c856c5d63bf772bf83e2e7744d11a2
+import os
+os.environ["RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE"] = "1"
+import ray
+from ray import serve
+
+from fastapi import FastAPI
+from transformers import pipeline
+
+app = FastAPI()
+serve_handle = None
+
+@app.on_event("startup")
+async def startup_event():
+    # Define a callable class to use for our Ray Serve backend.
+    class GPT2:
+        def __init__(self):
+            sefl.nlp_model = pipeline("text-generation", model="gpt-2")
+        def __call__(self, request):
+            return self.nlp_model(request.data, max_length=50)
+
+
+    ray.init(include_dashboard=True,
+             dashboard_host='0.0.0.0', dashboard_port=15490)
+    client = serve.start() # Start the Ray Serve Client
+
+    # Set up a backend with the desired number of replicas.
+    n_workers = os.cpu_count() // 2
+    backend_config = serve.BackendConfig(num_replicas=n_workers)
+    client.create_backend("Ray Serve Test GPT-2", GPT2, config=backend_config)
+    client.create_endpoint("generate", backend="GPT-2")
+
+    # Get a handle to our Ray Serve endpoint so we can query it in Python.
+    global serve_handle
+    serve_handle = client.get_handle("generate")
+
+@app.get("/generate")
+async def generate(query: str):
+    return await serve_handle.remote(query)
+
