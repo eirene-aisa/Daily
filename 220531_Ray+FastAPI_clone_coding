@@ -1,4 +1,5 @@
 # # https://gist.github.com/architkulkarni/71c856c5d63bf772bf83e2e7744d11a2
+# # https://medium.com/distributed-computing-with-ray/how-to-scale-up-your-fastapi-application-using-ray-serve-c9a7b69e786
 import os
 os.environ["RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE"] = "1"
 import ray
